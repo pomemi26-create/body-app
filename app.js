@@ -12,7 +12,7 @@ const RF_F = Math.round(STD_W);
 const RF_P = WD_P;
 const RF_C = Math.round((RF_KCAL-RF_P*4-RF_F*9)/4);
 
-const TABS = ["🏠 ホーム","🍽 食事","⚖️ 体重","📊 グラフ","💬 相談"];
+const TABS = ["🏠 ホーム","🍽 食事","⚖️ 体重","📊 グラフ","💬 相談","📥 出力"];
 const MEAL_TYPES = ["朝食","昼食","夕食","間食"];
 const SK = "body-app-data-v1";
 
@@ -88,7 +88,28 @@ function Bar({label,val,max,color,unit="g"}){
       <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:2}}>
         <span style={{fontWeight:"bold",color}}>{label}</span>
         <span style={{color:"#555"}}>{val}{unit} / {max}{unit}</span>
-      </div>
+        {tab===5&&<>
+          {card(<>
+            <div style={{fontWeight:"bold",fontSize:16,color:"#1DD1A1",marginBottom:8}}>📥 データ出力</div>
+            <div style={{fontSize:13,color:"#888",marginBottom:16,lineHeight:1.8}}>
+              これまでの記録をCSVファイルで出力できます。<br/>ExcelやGoogleスプレッドシートで開けます📊
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontWeight:"bold",fontSize:14,color:"#FF9F43",marginBottom:6}}>🍽 食事記録</div>
+              <div style={{fontSize:12,color:"#888",marginBottom:8}}>記録件数: {Object.values(data.meals).flat().length}件</div>
+              <button onClick={exportMealsCSV} style={{width:"100%",padding:13,borderRadius:12,border:"none",background:"linear-gradient(135deg,#FF9F43,#FF6B9D)",color:"white",fontWeight:"bold",fontSize:15,cursor:"pointer"}}>
+                📥 食事記録をCSV出力
+              </button>
+            </div>
+            <div style={{marginTop:16}}>
+              <div style={{fontWeight:"bold",fontSize:14,color:"#1DD1A1",marginBottom:6}}>⚖️ 体重記録</div>
+              <div style={{fontSize:12,color:"#888",marginBottom:8}}>記録件数: {Object.keys(data.weights).length}件</div>
+              <button onClick={exportWeightsCSV} style={{width:"100%",padding:13,borderRadius:12,border:"none",background:"linear-gradient(135deg,#1DD1A1,#48DBFB)",color:"white",fontWeight:"bold",fontSize:15,cursor:"pointer"}}>
+                📥 体重記録をCSV出力
+              </button>
+            </div>
+          </>)}
+        </>}
       <div style={{background:"#f0f0f0",borderRadius:8,height:10,overflow:"hidden"}}>
         <div style={{width:`${pct}%`,background:color,height:"100%",borderRadius:8,transition:"width .5s"}}/>
       </div>
@@ -147,6 +168,8 @@ function App(){
   const [hunger,setHunger]=useState("普通");
   const [memo,setMemo]=useState("");
 
+  // 日付が変わったら今日の食事表示は自動的に今日分のみ（dateキーで管理済み）
+  // todayKeyは毎レンダリング時に再計算されるので常に今日の日付
   const today=todayKey();
   const quote=QUOTES[dayIdx()%QUOTES.length];
   const meals=data.meals[today]||[];
@@ -187,7 +210,33 @@ function App(){
     setWt("");setSlp("");setMemo("");
   };
 
-  // 今日の記録をテキスト化してClaudeに渡すためのサマリー
+  // CSV出力
+  const exportMealsCSV=()=>{
+    const rows=[["日付","食事タイプ","食品名","カロリー(kcal)","P(g)","F(g)","C(g)"]];
+    Object.keys(data.meals).sort().forEach(date=>{
+      (data.meals[date]||[]).forEach(m=>{
+        rows.push([date, m.type, m.dOut?"外食":m.name, m.dOut?"":m.kcal, m.dOut?"":m.p, m.dOut?"":m.f, m.dOut?"":m.c]);
+      });
+    });
+    const csv="\uFEFF"+rows.map(r=>r.join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download="食事記録_"+todayKey()+".csv";
+    a.click();
+  };
+
+  const exportWeightsCSV=()=>{
+    const rows=[["日付","体重(kg)","睡眠(時間)","空腹感","メモ"]];
+    Object.keys(data.weights).sort().forEach(date=>{
+      const w=data.weights[date];
+      rows.push([date, w.weight||"", w.sleep||"", w.hunger||"", w.memo||""]);
+    });
+    const csv="\uFEFF"+rows.map(r=>r.join(",")).join("\n");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
+    a.download="体重記録_"+todayKey()+".csv";
+    a.click();
+  };
   const buildSummary=()=>{
     const lines=[
       `【今日の記録 ${today}】`,
