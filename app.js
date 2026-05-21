@@ -204,8 +204,19 @@ function App(){
 
   const addWt=()=>{
     if(!wt) return;
-    saveData({...data,weights:{...data.weights,[today]:{weight:+wt,sleep:slp,hunger,memo}}});
-    setWt("");setSlp("");setMemo("");
+    // 既存データとマージして保存（上書きではなく確実に保持）
+    const existing = data.weights[today] || {};
+    const newEntry = {
+      ...existing,
+      weight: +wt,
+      sleep: slp || existing.sleep || "",
+      hunger: hunger || existing.hunger || "普通",
+      memo: memo || existing.memo || ""
+    };
+    const newWeights = Object.assign({}, data.weights, {[today]: newEntry});
+    const newData = Object.assign({}, data, {weights: newWeights});
+    saveData(newData);
+    setWt(""); setSlp(""); setMemo("");
   };
 
   const buildSummary=()=>{
@@ -426,7 +437,13 @@ function App(){
           </>)}
           <div style={{fontWeight:"bold",fontSize:15,color:"#555",marginBottom:8,paddingLeft:4}}>📋 今週の記録</div>
           {wk.slice().reverse().map(k=>{
-            const w=data.weights[k]; if(!w) return null;
+            const w=data.weights[k];
+            if(!w || !w.weight) return (
+              <div key={k} style={{background:"white",borderRadius:14,padding:"10px 16px",marginBottom:8,boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                <div style={{fontSize:12,color:"#aaa"}}>{k}</div>
+                <div style={{fontSize:13,color:"#ddd",marginTop:2}}>未記録</div>
+              </div>
+            );
             return (
               <div key={k} style={{background:"white",borderRadius:14,padding:"12px 16px",marginBottom:8,boxShadow:"0 2px 8px rgba(0,0,0,0.06)"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
