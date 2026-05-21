@@ -202,10 +202,11 @@ function App(){
 
   const delMeal=id=>saveData({...data,meals:{...data.meals,[today]:meals.filter(m=>m.id!==id)}});
 
+  const [selectedDate, setSelectedDate] = useState(todayKey());
+
   const addWt=()=>{
     if(!wt) return;
-    // 既存データとマージして保存（上書きではなく確実に保持）
-    const existing = data.weights[today] || {};
+    const existing = data.weights[selectedDate] || {};
     const newEntry = {
       ...existing,
       weight: +wt,
@@ -213,7 +214,7 @@ function App(){
       hunger: hunger || existing.hunger || "普通",
       memo: memo || existing.memo || ""
     };
-    const newWeights = Object.assign({}, data.weights, {[today]: newEntry});
+    const newWeights = Object.assign({}, data.weights, {[selectedDate]: newEntry});
     const newData = Object.assign({}, data, {weights: newWeights});
     saveData(newData);
     setWt(""); setSlp(""); setMemo("");
@@ -416,6 +417,22 @@ function App(){
         {tab===2&&<>
           {card(<>
             <div style={{fontWeight:"bold",fontSize:16,color:"#1DD1A1",marginBottom:12}}>⚖️ 今日の体重・体調</div>
+            {/* 日付選択 */}
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:13,color:"#888",marginBottom:6}}>記録する日付</div>
+              <input
+                type="date"
+                value={selectedDate}
+                max={todayKey()}
+                onChange={e=>setSelectedDate(e.target.value)}
+                style={{...IS, marginBottom:0}}
+              />
+              {selectedDate !== today && (
+                <div style={{fontSize:12,color:"#FF9F43",marginTop:4}}>
+                  ⚠️ 過去の日付に記録します
+                </div>
+              )}
+            </div>
             {hadDOut&&(
               <div style={{background:"linear-gradient(135deg,#FFF0F8,#F5F0FF)",border:"1.5px solid #F0C0E0",borderRadius:14,padding:14,marginBottom:14}}>
                 <div style={{fontWeight:"bold",fontSize:13,color:"#FF6B9D",marginBottom:6}}>🍾 昨日外食だったあなたへ</div>
