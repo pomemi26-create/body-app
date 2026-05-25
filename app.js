@@ -161,6 +161,7 @@ function App(){
   const [prot,setProt]=useState("");
   const [fat,setFat]=useState("");
   const [carb,setCarb]=useState("");
+  const [qty,setQty]=useState("1");
   const [showH,setShowH]=useState(false);
   const [hQ,setHQ]=useState("");
   // 体重フォーム
@@ -184,7 +185,13 @@ function App(){
 
   const getRecent=function(type){return recentFoods[type]||[];};
   const filtered=getRecent(mealType).filter(function(h){return !hQ||h.name.includes(hQ);});
-  const applyH=function(item){setFName(item.name);setKcal(String(item.kcal));setProt(String(item.p));setFat(String(item.f));setCarb(String(item.c));setShowH(false);setHQ("");};
+  const applyH=function(item){
+    setFName(item.name);
+    // 1食分の基準値をセット
+    setKcal(String(item.kcal));setProt(String(item.p));setFat(String(item.f));setCarb(String(item.c));
+    setQty("1");
+    setShowH(false);setHQ("");
+  };
 
   const addMeal=function(){
     var nm;
@@ -195,12 +202,23 @@ function App(){
       setDOut(false);
     } else {
       if(!fName||!kcal) return;
-      var newItem={type:mealType,name:fName,kcal:+kcal,p:+prot||0,f:+fat||0,c:+carb||0,id:Date.now()};
+      var q=parseFloat(qty)||1;
+      var newItem={
+        type:mealType,
+        name:fName+(q!==1?" ×"+q:""),
+        kcal:Math.round(+kcal*q),
+        p:Math.round((+prot||0)*q*10)/10,
+        f:Math.round((+fat||0)*q*10)/10,
+        c:Math.round((+carb||0)*q*10)/10,
+        id:Date.now()
+      };
       var newMeals2=Object.assign({},data.meals);
       newMeals2[today]=[].concat(meals,[newItem]);
-      var newRecent=updateRecentFoods(recentFoods,mealType,newItem);
+      // 履歴には1食分の基準値を保存
+      var baseItem={type:mealType,name:fName,kcal:+kcal,p:+prot||0,f:+fat||0,c:+carb||0};
+      var newRecent=updateRecentFoods(recentFoods,mealType,baseItem);
       nm=Object.assign({},data,{meals:newMeals2,recentFoods:newRecent});
-      setFName("");setKcal("");setProt("");setFat("");setCarb("");
+      setFName("");setKcal("");setProt("");setFat("");setCarb("");setQty("1");
     }
     saveData(nm);
   };
@@ -381,6 +399,45 @@ function App(){
                   <input value={fat} onChange={function(e){setFat(e.target.value);}} placeholder="F(g)" type="number" style={IS}/>
                   <input value={carb} onChange={function(e){setCarb(e.target.value);}} placeholder="C(g)" type="number" style={IS}/>
                 </div>
+                {/* 数量 */}
+                <div style={{marginBottom:8}}>
+                  <div style={{fontSize:13,color:"#888",marginBottom:6,fontWeight:"bold"}}>数量（個・杯・倍など）</div>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    <input
+                      value={qty}
+                      onChange={function(e){setQty(e.target.value);}}
+                      placeholder="1"
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      style={Object.assign({},IS,{marginBottom:0,flex:1})}
+                    />
+                    <div style={{display:"flex",gap:4}}>
+                      {["0.5","1","1.5","2"].map(function(q){return (
+                        <button key={q} onClick={function(){setQty(q);}} style={{padding:"8px 10px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:"bold",background:qty===q?"#FF9F43":"#f0f0f0",color:qty===q?"white":"#555"}}>{q}</button>
+                      );})}
+                    </div>
+                  </div>
+                </div>
+                {/* 計算プレビュー */}
+                {kcal&&parseFloat(qty)>0&&parseFloat(qty)!==1&&(
+                  <div style={{background:"#FFF8F0",borderRadius:12,padding:"10px 14px",marginBottom:8,fontSize:12,color:"#FF9F43"}}>
+                    <div style={{fontWeight:"bold",marginBottom:4}}>📊 ×{qty} で計算した値</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",textAlign:"center",gap:4}}>
+                      {[
+                        ["kcal",Math.round((+kcal||0)*parseFloat(qty)),"#FF6B9D"],
+                        ["P(g)",Math.round((+prot||0)*parseFloat(qty)*10)/10,"#A29BFE"],
+                        ["F(g)",Math.round((+fat||0)*parseFloat(qty)*10)/10,"#FF9F43"],
+                        ["C(g)",Math.round((+carb||0)*parseFloat(qty)*10)/10,"#48DBFB"]
+                      ].map(function(x){return (
+                        <div key={x[0]} style={{background:x[2]+"15",borderRadius:8,padding:"4px 0"}}>
+                          <div style={{fontSize:10,color:"#888"}}>{x[0]}</div>
+                          <div style={{fontWeight:"bold",color:x[2]}}>{x[1]}</div>
+                        </div>
+                      );})}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <button onClick={addMeal} style={{width:"100%",padding:12,borderRadius:12,border:"none",background:dOut?"linear-gradient(135deg,#FF6B9D,#A29BFE)":"linear-gradient(135deg,#FF9F43,#FF6B9D)",color:"white",fontWeight:"bold",fontSize:15,cursor:"pointer"}}>
