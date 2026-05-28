@@ -319,7 +319,7 @@ function App(){
               <div style={{fontWeight:"bold",fontSize:16,color:"#FF6B9D"}}>📅 今日の摂取</div>
               <div style={{fontSize:13,fontWeight:"bold",color:rem>=0?"#1DD1A1":"#FF6B9D"}}>残り {rem}kcal</div>
             </div>
-            <Donut p={Math.round(tot.p)} f={Math.round(tot.f)} c={Math.round(tot.c)}/>
+            {React.createElement(Donut,{p:Math.round(tot.p),f:Math.round(tot.f),c:Math.round(tot.c),size:110})}
             <div style={{display:"flex",justifyContent:"center",gap:12,marginTop:8,fontSize:12}}>
               {[["P","#A29BFE"],["F","#FF9F43"],["C","#48DBFB"]].map(function(x){return (
                 <span key={x[0]} style={{display:"flex",alignItems:"center",gap:4}}><span style={{width:10,height:10,borderRadius:"50%",background:x[1],display:"inline-block"}}/>{x[0]}</span>
